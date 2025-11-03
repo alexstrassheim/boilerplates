@@ -1,0 +1,13 @@
+networks:
+  backend:
+    external: true
+
+services:
+  cloudflare-ddns:
+    image: oznu/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    env_file:
+      - stack.env
+    networks:
+      - backend

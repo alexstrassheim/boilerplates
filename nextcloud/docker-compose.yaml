@@ -1,0 +1,76 @@
+volumes:
+  clamsocket: {}
+  virus_db: {}
+
+networks:
+  frontend:
+    external: true
+  backend_nextcloud:
+    external: true
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    volumes:
+      - ${BASE_PATH}/nextcloud/database:/var/lib/mysql
+    environment:
+      - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_DISABLE_UPGRADE_BACKUP=1
+    env_file:
+      - stack.env
+    networks:
+      - backend_nextcloud
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      - backend_nextcloud
+
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    ports:
+      - 8090:80
+    volumes:
+      - ${BASE_PATH}/nextcloud/html:/var/www/html
+      - clamsocket:/var/run/clamav/ # Socket
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - MYSQL_HOST=db
+      - REDIS_HOST=redis
+    env_file:
+      - stack.env
+    depends_on:
+      - db
+      - redis
+      - clamav
+    networks:
+      - frontend
+      - backend_nextcloud
+
+  cron:
+    image: nextcloud:latest
+    restart: unless-stopped
+    volumes:
+      - ${BASE_PATH}/nextcloud/html:/var/www/html
+    entrypoint: /cron.sh
+    networks:
+      - backend_nextcloud
+    depends_on:
+      - db
+      - redis
+
+  clamav:
+    image: "clamav/clamav"
+    restart: unless-stopped
+    volumes:
+      - clamsocket:/tmp/ # Socket
+      - virus_db:/var/lib/clamav/ # Virus DB
+    networks:
+      - backend_nextcloud

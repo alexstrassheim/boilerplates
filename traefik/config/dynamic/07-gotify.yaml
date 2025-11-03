@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-gotify:
+         rule: 'Host(`gotify.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: gotify
+
+   services:
+      gotify:
+         loadbalancer:
+            servers:
+               - url: http://gotify:80

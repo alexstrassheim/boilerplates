@@ -1,0 +1,178 @@
+global:
+   checkNewVersion: true
+   sendAnonymousUsage: false
+
+# -- (Optional) Change Log Level and Format here...
+#     - loglevels [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+#     - format [common, json, logfmt]
+log:
+   level: INFO
+   format: json
+   filePath: /var/log/traefik/traefik.log
+
+# -- (Optional) Enable Accesslog and change Format here...
+#     - format [common, json, logfmt]
+accesslog:
+   format: json
+   filePath: /var/log/traefik/access.log
+   filters:
+      statusCodes:
+         - "200-299" # log successful http requests
+         - "400-599" # log failed http requests
+   # collect logs as in-memory buffer before writing into log file
+   #bufferingSize: 0
+   fields:
+      headers:
+         #defaultMode: keep # keep all headers per default
+         defaultMode: drop # drop all headers per default
+         names:
+            User-Agent: keep # log user agent strings
+
+# -- (Optional) Enable API and Dashboard here, don't do in production
+api:
+   dashboard: true
+   disableDashboardAd: true
+   insecure: true
+
+# -- Change EntryPoints here...
+entryPoints:
+   web:
+      address: :80
+      transport:
+         respondingTimeouts:
+            readTimeout: 0s
+            idleTimeout: 600s
+            writeTimeout: 600s
+      # -- (Optional) Redirect all HTTP to HTTPS
+      forwardedHeaders:
+         #insecure: true
+         trustedIPs: &trustedIps
+            # Start tailscale
+            - 172.16.0.0/16
+            - 100.64.0.0/10
+            # Start of Clouflare public IP list for HTTP requests, remove this if you don't use it
+            # https://www.cloudflare.com/ips-v4
+            # https://www.cloudflare.com/ips-v6
+            - 173.245.48.0/20
+            - 103.21.244.0/22
+            - 103.22.200.0/22
+            - 103.31.4.0/22
+            - 141.101.64.0/18
+            - 108.162.192.0/18
+            - 190.93.240.0/20
+            - 188.114.96.0/20
+            - 197.234.240.0/22
+            - 198.41.128.0/17
+            - 162.158.0.0/15
+            - 104.16.0.0/13
+            - 104.24.0.0/14
+            - 172.64.0.0/13
+            - 131.0.72.0/22
+            - 2400:cb00::/32
+            - 2606:4700::/32
+            - 2803:f800::/32
+            - 2405:b500::/32
+            - 2405:8100::/32
+            - 2a06:98c0::/29
+            - 2c0f:f248::/32
+            # End of Cloudlare public IP list
+         
+      http:
+         redirections:
+            entryPoint:
+               to: websecure
+               scheme: https
+
+   websecure:
+      http3: {}
+      address: :443
+      transport:
+         respondingTimeouts:
+            readTimeout: 0s
+            idleTimeout: 600s
+            writeTimeout: 600s
+      forwardedHeaders:
+         # Reuse list of Cloudflare Trusted IP's above for HTTPS requests
+         trustedIPs: *trustedIps
+      http:
+         middlewares: &middlewares
+            - crowdsec@file
+            # - default-headers@file
+            - error-page@file
+            # - geoblock@file
+         tls: &tls
+            certResolver: production
+            # domains:
+            #    - main: "your_domain.de"
+            #      sans:
+            #         - "*.your_domain.de"
+
+   websecureExtern:
+      http3: {}
+      address: :4443
+      transport:
+         respondingTimeouts:
+            readTimeout: 0s
+            idleTimeout: 600s
+            writeTimeout: 600s
+      forwardedHeaders:
+         # Reuse list of Cloudflare Trusted IP's above for HTTPS requests
+         trustedIPs: *trustedIps
+      http:
+         # Reuse list of middleware above for websecureExtern requests
+         middlewares: *middlewares
+         # Reuse list of tls setting above for websecureExtern requests
+         tls: *tls
+
+# -- Configure your CertificateResolver here...
+certificatesResolvers:
+   # staging:
+   #   acme:
+   #     email: your-email@example.com
+   #     storage: /etc/traefik/letsencrypt/acme.json
+   #     caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+   #     dnsChallenge:
+   #       provider: cloudflare
+   #       disablePropagationCheck: true
+   #       delayBeforeCheck: 60s
+   #       resolvers:
+   #         - "1.1.1.1:53"
+   #         - "8.8.8.8:53"
+   production:
+      acme:
+         #email: your-email@example.com
+         storage: /etc/traefik/letsencrypt/acme.json
+         caServer: "https://acme-v02.api.letsencrypt.org/directory"
+         dnsChallenge:
+            provider: cloudflare
+            #propagation:
+            #   disableChecks: true
+            #   delayBeforeChecks: 60s
+            disablePropagationCheck: true
+            delayBeforeCheck: 60s
+            resolvers:
+               - "1.1.1.1:53"
+               - "8.8.8.8:53"
+
+# -- (Optional) Disable TLS Cert verification check
+serversTransport:
+   insecureSkipVerify: true
+
+providers:
+   docker:
+      # -- (Optional) Enable this, if you want to expose all containers automatically
+      exposedByDefault: false
+   file:
+      directory: /etc/traefik/dynamic
+      watch: true
+
+experimental:
+   plugins:
+      crowdsec-bouncer-traefik-plugin:
+         moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+         version: "v1.4.5"
+
+      # geoblock:
+      #    moduleName: "github.com/PascalMinder/geoblock"
+      #    version: "v0.2.8"
+

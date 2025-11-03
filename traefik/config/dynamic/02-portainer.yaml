@@ -1,0 +1,13 @@
+http:
+  routers:   
+    to-portainer:
+      rule: 'Host(`portainer.{{ env "MY_DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+      service: portainer
+
+  services:
+    portainer:
+      loadbalancer:
+        servers:
+          - url: https://192.168.178.3:9000

@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-paperless:
+         rule: 'Host(`pl.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: paperless
+
+   services:
+      paperless:
+         loadbalancer:
+            servers:
+               - url: http://paperless:8000

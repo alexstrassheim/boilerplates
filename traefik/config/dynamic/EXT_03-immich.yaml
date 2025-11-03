@@ -1,0 +1,16 @@
+http:
+  routers:
+    to-immich:
+      rule: 'Host(`photo.{{ env "MY_DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+        - websecureExtern
+      middlewares:
+        - default-headers@file
+      service: immich
+
+  services:
+    immich:
+      loadbalancer:
+        servers:
+          - url: http://immich_server:2283

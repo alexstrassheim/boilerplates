@@ -1,0 +1,20 @@
+networks:
+  frontend:
+    external: true
+
+services:
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # - LOG_LEVEL=${LOG_LEVEL}
+    ports:
+      - 5055:5055
+    volumes:
+      - ${BASE_PATH}/jellyseerr/config:/app/config
+    networks:
+      - frontend

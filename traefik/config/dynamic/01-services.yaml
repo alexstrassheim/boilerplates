@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-nas:
+         rule: 'Host(`nas.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: nas
+
+   services:
+      nas:
+         loadbalancer:
+            servers:
+               - url: http://192.168.178.3:5000

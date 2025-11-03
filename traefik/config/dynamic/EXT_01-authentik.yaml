@@ -1,0 +1,16 @@
+http:
+  routers:   
+    to-authentik:
+      rule: 'Host(`auth.{{ env "MY_DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+        - websecureExtern
+      middlewares:
+        - default-headers@file
+      service: authentik
+
+  services:
+   authentik:
+      loadbalancer:
+        servers:
+          - url: http://authentik-server:9000

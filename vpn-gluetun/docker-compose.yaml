@@ -1,0 +1,60 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ${BASE_PATH}/vpn/wg0.conf:/gluetun/wireguard/wg0.conf:ro
+    devices:
+      - /dev/net/tun:/dev/net/tun
+      - /dev/dri:/dev/dri  # Hardware acceleration for m3u-proxy
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - VPN_SERVICE_PROVIDER=custom
+      - VPN_TYPE=wireguard  
+    ports:
+      # - "0.0.0.0:9091:9091/tcp"   # <-- ports go here, not below- 9987:9987
+      - 9191:9191 # dispatcher
+
+
+  curl:
+    image: curlimages/curl
+    command: ["curl", "ifconfig.me"]
+    network_mode: "service:gluetun"  # <-- the magic
+  
+  
+  dispatcharr:
+    image: ghcr.io/dispatcharr/dispatcharr:latest
+    restart: unless-stopped
+    container_name: dispatcharr
+    network_mode: "service:gluetun"  # <-- the magic
+    depends_on:
+      - gluetun
+    volumes:
+      - ${BASE_PATH}/iptv/dispatcharr_data:/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - DISPATCHARR_ENV=aio
+      - REDIS_HOST=localhost
+      - CELERY_BROKER_URL=redis://localhost:6379/0
+      - DISPATCHARR_LOG_LEVEL=info
+      # Process Priority Configuration (Optional)
+      # Lower values = higher priority. Range: -20 (highest) to 19 (lowest)
+      # Negative values require cap_add: SYS_NICE (uncomment below)
+      - UWSGI_NICE_LEVEL=-5   # uWSGI/FFmpeg/Streaming (default: 0, recommended: -5 for high priority)
+      - CELERY_NICE_LEVEL=5   # Celery/EPG/Background tasks (default: 5, low priority)
+
+    group_add:
+      - '107' # render
+    # Uncomment to enable high priority for streaming (required if UWSGI_NICE_LEVEL < 0)
+    cap_add:
+      - SYS_NICE
+    # Optional for hardware acceleration
+    devices:
+      - /dev/dri:/dev/dri  # For Intel/AMD GPU acceleration (VA-API)
+

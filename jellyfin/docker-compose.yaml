@@ -1,0 +1,27 @@
+networks:
+  frontend:
+    external: true
+
+services:
+  jellyfin:
+    image: ghcr.io/jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: 'unless-stopped'
+    user: ${PUID}:${GUID}
+    group_add:
+      - '107' # render
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ${BASE_PATH}/jellyfin/config:/config:rw
+      - ${BASE_PATH}/jellyfin/cache:/cache:rw
+      - type: bind
+        source: ${VIDEO_PATH}
+        target: /media
+        read_only: true
+    ports:
+      - 8096:8096
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    networks:
+      - frontend

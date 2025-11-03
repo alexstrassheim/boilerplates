@@ -1,0 +1,45 @@
+http:
+   middlewares:
+      default-headers:
+         headers:
+            sslRedirect: true
+            frameDeny: true
+            contentTypeNosniff: true # Alternativ mit X-Content-Type-Options in customResponseHeaders
+            referrerPolicy: "strict-origin-when-cross-origin"
+            permissionsPolicy: "camera=(), geolocation=(), microphone=(), payment=(), usb=()"
+            forceSTSHeader: true
+            stsSeconds: 15552000 # 1 Jahr für HSTS
+            # stsSeconds: 5000 # 1 Jahr für HSTS TESTING
+            stsIncludeSubdomains: true
+            stsPreload: true
+            hostsProxyHeaders:
+               - "X-Forwarded-Host"
+            customResponseHeaders:
+               X-Robots-Tag: "noindex,nofollow"
+               server: ""
+               x-powered-by: ""
+               X-Content-Type-Options: "nosniff"
+               X-Frame-Options: "sameorigin"
+               Cross-Origin-Embedder-Policy: "unsafe-none"
+               Cross-Origin-Opener-Policy: "same-origin"
+               Cross-Origin-Resource-Policy: "same-origin"
+               Expect-CT: "enforce, max-age=86400" # Expect-CT für Zertifikat-Transparenz
+
+tls:
+   options:
+      default:
+         minVersion: VersionTLS12
+         maxVersion: VersionTLS13
+         cipherSuites:
+            # Moderne Cipher Suites mit PFS und hoher Sicherheit
+            - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+            - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+            - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+            - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+            - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+            - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+         curvePreferences:
+            # Sichere und weit unterstützte Elliptic Curves
+            - X25519
+            - CurveP256
+         sniStrict: true

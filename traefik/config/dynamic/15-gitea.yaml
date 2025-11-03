@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-gitea:
+         rule: 'Host(`gitea.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: gitea
+
+   services:
+      gitea:
+         loadbalancer:
+            servers:
+               - url: http://gitea:3000

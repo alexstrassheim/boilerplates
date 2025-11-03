@@ -1,0 +1,16 @@
+http:
+   middlewares:
+      error-page:
+         errors:
+            status:
+               # - "403"
+               - "404"
+               - "500"
+            service: error-pages
+            query: "/{status}.html"
+
+   services:
+      error-pages:
+         loadbalancer:
+            servers:
+               - url: http://error-pages:8080

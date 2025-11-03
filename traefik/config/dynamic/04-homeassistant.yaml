@@ -1,0 +1,13 @@
+http:
+  routers:   
+    to-homeassistant:
+      rule: 'Host(`ha.{{ env "MY_DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+      service: homeassistant
+
+  services:  
+    homeassistant:
+      loadbalancer:
+        servers:
+          - url: http://homeassistant:8123

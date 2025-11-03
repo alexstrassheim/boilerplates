@@ -1,0 +1,24 @@
+http:
+   middlewares:
+      crowdsec:
+         plugin:
+            crowdsec-bouncer-traefik-plugin:
+               CrowdsecLapiKey: '{{env "CROWDSEC_LAPI_KEY"}}'
+               enabled: "true"
+               defaultDecisionSeconds: 60
+               crowdsecMode: live
+               crowdsecAppsecEnabled: false
+               crowdsecAppsecHost: crowdsec:7422
+               crowdsecAppsecFailureBlock: true
+               crowdsecAppsecUnreachableBlock: true
+               crowdsecLapiHost: crowdsec:8080
+               crowdsecLapiScheme: http
+               crowdsecLapiTLSInsecureVerify: false
+               forwardedHeadersTrustedIPs:
+                  # private class ranges
+                  - 172.16.0.0/12
+                  # - 192.168.0.0/16
+               clientTrustedIPs:
+                  # private class ranges
+                  - 172.16.0.0/12
+                  # - 192.168.0.0/16

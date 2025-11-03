@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-affine:
+         rule: 'Host(`affine.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: affine
+
+   services:
+      affine:
+         loadbalancer:
+            servers:
+               - url: http://affine_server:3010

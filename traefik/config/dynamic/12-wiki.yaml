@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-wiki:
+         rule: 'Host(`wiki.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: wiki
+
+   services:
+      wiki:
+         loadbalancer:
+            servers:
+               - url: http://wiki:3000

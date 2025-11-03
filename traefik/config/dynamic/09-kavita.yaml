@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-kavita:
+         rule: 'Host(`books.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: kavita
+
+   services:
+      kavita:
+         loadbalancer:
+            servers:
+               - url: http://kavita:5000

@@ -1,0 +1,81 @@
+networks:
+  frontend:
+    external: true
+  backend_immich:
+    external: true
+
+volumes:
+  model-cache: {}
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    container_name: immich_server
+    restart: unless-stopped
+    volumes:
+      - ${BASE_PATH}/immich/upload:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - stack.env
+    ports:
+      - 2283:2283
+    depends_on:
+      - redis
+      - database
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - '44' # video
+      - '107' # render
+    healthcheck:
+      disable: false
+    networks:
+      - frontend
+      - backend_immich
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    container_name: immich_machine_learning
+    restart: unless-stopped
+    device_cgroup_rules:
+      - 'c 189:* rmw'
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - '44' # video
+      - '107' # render
+    volumes:
+      - model-cache:/cache
+      - /dev/bus/usb:/dev/bus/usb
+    env_file:
+      - stack.env
+    healthcheck:
+      disable: false
+    networks:
+      - backend_immich
+
+  redis:
+    container_name: immich_redis
+    image: docker.io/redis:6.2-alpine@sha256:2ba50e1ac3a0ea17b736ce9db2b0a9f6f8b85d4c27d5f5accc6a416d8f42c6d5
+    restart: unless-stopped
+    healthcheck:
+      test: redis-cli ping || exit 1
+    networks:
+      - backend_immich
+
+  database:
+    container_name: immich_postgres
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      # Uncomment the DB_STORAGE_TYPE: 'HDD' var if your database isn't stored on SSDs
+      DB_STORAGE_TYPE: 'HDD'
+    volumes:
+      - ${BASE_PATH}/immich/database:/var/lib/postgresql/data
+
+    networks:
+      - backend_immich

@@ -1,0 +1,21 @@
+networks:
+  frontend:
+    external: true
+    
+services:
+  kavita:
+    image: ghcr.io/kareadita/kavita:latest    # Using the stable branch from ghcr.io
+    container_name: kavita
+    volumes:
+      - ${BASE_PATH}/kavita/data:/data
+      - ${BASE_PATH}/kavita/config:/kavita/config     # /kavita/config must not be changed
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true
+    ports:
+      - "8084:5000"
+    restart: unless-stopped
+    networks:
+      - frontend

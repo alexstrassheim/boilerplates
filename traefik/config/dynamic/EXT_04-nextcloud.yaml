@@ -1,0 +1,47 @@
+http:
+   routers:
+      to-nextcloud:
+         rule: 'Host(`nextcloud.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+            - websecureExtern
+         middlewares:
+            - default-headers@file
+            - nextcloud-webdav
+            - webfinger-redirect
+         service: nextcloud
+
+      to-nextcloud-admin:
+         rule: 'Host(`nextcloud.{{ env "MY_DOMAIN" }}`) && Path(`/login`)'
+         entryPoints:
+            - websecure
+            - websecureExtern
+         middlewares:
+            - default-headers@file
+            - oidc-default
+         service: nextcloud
+
+   services:
+      nextcloud:
+         loadbalancer:
+            servers:
+               - url: http://nextcloud:80
+
+   middlewares:
+      nextcloud-webdav:
+         redirectRegex:
+            regex: "^https://(.*)/.well-known/(card|cal)dav"
+            replacement: "https://${1}/remote.php/dav/"
+            permanent: true
+
+      webfinger-redirect:
+         redirectRegex:
+            regex: "^https://(.*)/.well-known/webfinger"
+            replacement: "https://${1}/index.php/.well-known/webfinger"
+            permanent: true
+
+      oidc-default:
+         redirectRegex:
+            regex: "^https://(.*)/login\\?direct=1$"
+            replacement: "https://${1}"
+            permanent: true

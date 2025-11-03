@@ -1,0 +1,13 @@
+http:
+  routers:
+    to-stirling-pdf:
+      rule: 'Host(`pdf.{{ env "MY_DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+      service: stirling-pdf
+
+  services:
+    stirling-pdf:
+      loadbalancer:
+        servers:
+          - url: http://stirling-pdf:8080

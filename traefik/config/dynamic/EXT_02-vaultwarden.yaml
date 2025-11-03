@@ -1,0 +1,26 @@
+http:
+   routers:
+      to-vaultwarden:
+         service: vaultwarden
+         entryPoints:
+            - websecure
+            - websecureExtern
+         middlewares:
+            - default-headers@file
+         rule: 'Host(`bitwarden.{{ env "MY_DOMAIN" }}`)'
+
+      to-vaultwarden-admin:
+         service: vaultwarden
+         rule: 'Host(`bitwarden.{{ env "MY_DOMAIN" }}`) && PathPrefix(`/admin`)'
+         entryPoints:
+            - websecure
+            - websecureExtern
+         middlewares:
+            - default-headers@file
+            - authentik@file
+                   
+   services:
+      vaultwarden:
+         loadbalancer:
+            servers:
+               - url: http://vaultwarden:80

@@ -1,0 +1,47 @@
+http:
+   routers:
+      to-jellyfin:
+         rule: 'Host(`tv.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         middlewares:
+            # - default-headers@file
+            # - no-default-headers
+          
+         service: jellyfin
+
+      to-jellyseerr:
+         rule: 'Host(`jellyseerr.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: jellyseerr
+
+      to-jellystat:
+         rule: 'Host(`jellystat.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: jellystat
+
+   services:
+      jellyfin:
+         loadbalancer:
+            servers:
+               - url: http://jellyfin:8096
+
+      jellyseerr:
+         loadbalancer:
+            servers:
+               - url: http://jellyseerr:5055
+
+      jellystat:
+         loadbalancer:
+            servers:
+               - url: http://jellystat:3000
+
+   middlewares:
+      no-default-headers:
+         headers:
+            stsSeconds: 2000 # 1 Jahr für HSTS
+            customResponseHeaders:
+               X-Robots-Tag: "noindex,nofollow"
+               server: "ABC"

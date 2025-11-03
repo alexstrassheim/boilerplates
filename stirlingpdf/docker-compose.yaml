@@ -1,0 +1,25 @@
+networks:
+  frontend:
+    external: true
+
+services:
+  stirling-pdf:
+    image: frooodle/s-pdf:latest
+    container_name: stirling-pdf
+    restart: 'unless-stopped'
+    ports:
+      - '8081:8080'
+    volumes:
+      - ${BASE_PATH}/stirlingpdf/trainingData:/usr/share/tessdata #Required for extra OCR languages
+      - ${BASE_PATH}/stirlingpdf/extraConfigs:/configs
+      - ${BASE_PATH}/stirlingpdf/customFiles:/customFiles/
+      - ${BASE_PATH}/stirlingpdf/logs:/logs/
+    environment:
+      - PUID=${PUID}
+      - GUID=${GUID}
+      - TZ=${TZ}
+      - DOCKER_ENABLE_SECURITY=false
+      - INSTALL_BOOK_AND_ADVANCED_HTML_OPS=false
+      - LANGS=de_DE
+    networks:
+      - frontend

@@ -1,0 +1,16 @@
+http:
+   routers:
+      to-sysreptor:
+         rule: 'Host(`sysreptor.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         middlewares:
+            # - default-headers@file
+         service: sysreptor
+         tls: {}
+
+   services:
+      sysreptor:
+         loadbalancer:
+            servers:
+               - url: http://sysreptor-app:8000

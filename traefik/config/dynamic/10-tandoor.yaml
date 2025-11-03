@@ -1,0 +1,13 @@
+http:
+   routers:
+      to-tandoor:
+         rule: 'Host(`kochen.{{ env "MY_DOMAIN" }}`)'
+         entryPoints:
+            - websecure
+         service: tandoor
+
+   services:
+      tandoor:
+         loadbalancer:
+            servers:
+               - url: http://tandoor:80

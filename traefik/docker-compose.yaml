@@ -1,0 +1,73 @@
+networks:
+  frontend:
+    external: true
+
+services:
+  traefik:
+    image: "traefik:v3.5"
+    container_name: "traefik"
+    restart: always
+    ports:
+      - 80:80
+      - 443:443/tcp
+      - 443:443/udp
+      - 4443:4443/tcp
+      - 4443:4443/udp
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ${BASE_PATH}/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ${BASE_PATH}/traefik/dynamic:/etc/traefik/dynamic
+      - ${BASE_PATH}/traefik/letsencrypt:/etc/traefik/letsencrypt
+      - ${BASE_PATH}/traefik/logs:/var/log/traefik
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - MY_DOMAIN=${MY_DOMAIN} # used in traefik config
+      - CROWDSEC_LAPI_KEY=${CROWDSEC_LAPI_KEY} # used in traefik config
+      - TRAEFIK_ENTRYPOINTS_WEBSECURE_HTTP_TLS_DOMAINS[0]_MAIN='${MY_DOMAIN}'
+      - TRAEFIK_ENTRYPOINTS_WEBSECURE_HTTP_TLS_DOMAINS[0]_SANS='*.${MY_DOMAIN}'
+      - TRAEFIK_CERTIFICATESRESOLVERS_NAME_ACME_EMAIL=${TRAEFIK_EMAIL}
+    networks:
+      - frontend
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.7.3
+    container_name: crowdsec
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/appsec-generic-rules crowdsecurity/appsec-virtual-patching crowdsecurity/sshd crowdsecurity/linux crowdsecurity/base-http-scenarios
+      # - COLLECTIONS=crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules
+      - CUSTOM_HOSTNAME=crowdsec
+      - BOUNCER_KEY_TRAEFIK=${CROWDSEC_LAPI_KEY}
+    volumes:
+      - ${BASE_PATH}/crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - ${BASE_PATH}/traefik/logs:/var/log/traefik:ro
+      - ${BASE_PATH}/crowdsec/db:/var/lib/crowdsec/data/
+      - ${BASE_PATH}/crowdsec/config:/etc/crowdsec/
+    expose:
+      - 8080 # http api for bouncers
+      - 6060 # metrics endpoint for prometheus
+      - 7422 # appsec waf endpoint
+    networks:
+      - frontend
+
+
+  error-pages:
+    image: ghcr.io/tarampampam/error-pages:3.7
+    container_name: error-pages
+    restart: unless-stopped
+    env_file:
+      - stack.env
+
+    networks:
+      - frontend
+      
+  
+

@@ -1,0 +1,21 @@
+networks: 
+  frontend:
+    external: true
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - '8888:80'
+    environment:
+      - PUID=${PUID}
+      - GUID=${GUID}
+      - TZ=${TZ}
+      - SIGNUPS_ALLOWED='false'
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+    volumes:
+      - ${BASE_PATH}/vaultwarden:/data
+    networks:
+      - frontend

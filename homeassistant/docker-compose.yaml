@@ -1,0 +1,45 @@
+networks:
+  frontend:
+    external: true
+
+services:
+  homeassistant:
+    image: "ghcr.io/home-assistant/home-assistant:latest"
+    container_name: homeassistant
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${BASE_PATH}/homeassistant/config:/config
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    # network_mode: host
+    networks:
+      - frontend
+    ports:
+      - '8123:8123'
+      - '8283:8283' # mb
+    privileged: true
+
+  matterbridge:
+    container_name: matterbridge
+    image: luligu/matterbridge:latest                         # Matterbridge image with the tag latest
+    network_mode: "service:homeassistant"  # <-- the magic
+    restart: unless-stopped
+    volumes:
+      - "${BASE_PATH}/matter/Matterbridge:/root/Matterbridge"             # Mounts the Matterbridge plugin directory
+      - "${BASE_PATH}/matter/.matterbridge:/root/.matterbridge" 
+      - "${BASE_PATH}/matter/.mattercert:/root/.mattercert"   
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      
+  mdns-reflector:
+    image: docker.io/yuxzhu/mdns-reflector:latest
+    command: mdns-reflector -fnl info enp3s0 br-def0e00afe8f
+    network_mode: host
+    restart: unless-stopped

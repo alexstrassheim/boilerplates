@@ -1,0 +1,24 @@
+# http:
+#    middlewares:
+#       geoblock:
+#          plugin:
+#             geoblock:
+#                allowLocalRequests: "true"
+#                allowUnknownCountries: "true"
+#                api: https://get.geojs.io/v1/ip/country/{ip}
+#                apiTimeoutMs: "150"
+#                cacheSize: "15"
+#                countries:
+#                   # Used because Cloudflare Proxy is US based
+#                   - US  
+#                   - DE
+#                   # - IT
+#                   # - FR
+#                   # - CH
+#                   # - CZ
+#                forceMonthlyUpdate: "true"
+#                logAllowedRequests: "false"
+#                logApiRequests: "true"
+#                logLocalRequests: "false"
+#                silentStartUp: "false"
+#                unknownCountryApiResponse: nil

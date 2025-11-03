@@ -1,0 +1,83 @@
+networks:
+  frontend:
+    external: true
+  backend_authentik:
+    external: true
+
+volumes:
+  database:
+    driver: local
+
+services:
+  postgresql:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+      - CMD-SHELL
+      - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      timeout: 5s
+    volumes:
+      - database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASS:?database password required}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_DB: ${PG_DB:-authentik}
+    env_file:
+      - stack.env
+    networks:
+      - backend_authentik
+
+  server:
+    image: ghcr.io/goauthentik/server:2025.10.0
+    container_name: authentik-server
+    restart: unless-stopped
+    command: server
+    volumes:
+      - ${BASE_PATH}/authentik/media:/media
+      - ${BASE_PATH}/authentik/custom-templates:/templates
+    env_file:
+      - stack.env
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+    #ports:
+    #  - "${COMPOSE_PORT_HTTP:-9000}:9000"
+    #  - "${COMPOSE_PORT_HTTPS:-9443}:9443"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - backend_authentik
+      - frontend
+  
+  worker:
+    image: ghcr.io/goauthentik/server:2025.10.0
+    container_name: authentik-worker
+    restart: unless-stopped
+    command: worker
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${BASE_PATH}/authentik/media:/media
+      - ${BASE_PATH}/authentik/certs:/certs
+      - ${BASE_PATH}/authentik/custom-templates:/templates
+    env_file:
+      - stack.env
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - backend_authentik

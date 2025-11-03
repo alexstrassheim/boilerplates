@@ -1,0 +1,14 @@
+http:
+  routers:   
+    to-heimdall:
+      rule: 'Host(`home.{{ env "MY_DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+      service: heimdall
+
+  services:  
+    heimdall:
+      loadbalancer:
+        servers:
+          - url: http://heimdall:80
+    
